@@ -184,3 +184,36 @@ anova(M$gam)
 DEV_NULL <-deviance(lm(sqrt(1/DATOS3$Closeness_centrality) ~1))
 DEV_RESIDUAL <-deviance(lm(as.vector(M$gam$residuals) ~1))
 1 - DEV_RESIDUAL/DEV_NULL #Pseudo R2
+
+
+#########################################################################
+############ Calculating the probability of sharing ectoparasites  ######
+#########################################################################
+library(geotax)
+dist <- read.csv("dist_gn.csv") #Taxonomic distance
+incidence <- read.csv("incidence_gn.csv") #Interaction matrix
+rownames(incidence) <- incidence$X
+rownames(dist) <- dist$X
+incidence <- incidence[ ,-1]; dist <- dist[ ,-1]
+coef_all <- log_reg_boostrap(incidence, dist, 1000)
+coef <- sapply(1:nrow(incidence), function(x)
+    log_reg_boostrap(incidence[x, ,drop=F], dist, 1000) )
+TD    <- seq(0, 8, 0.1)
+coef <- t(coef)[ ,c(1,7)]
+#obtiene la probabilidad con los coeficientes
+reg <- apply(coef, 1, function(x) prob_logit(x, TD) )
+reg_all <- prob_logit(coef_all[c(1,7)], TD)
+matplot(reg, type="l",
+        ylab="Probability of sharing ectoparasite species",
+        xlab="Taxonomic distance between mammal species",
+        cex=1, axes = F,
+        col="gray",lwd=0.1,lty=1 )
+lines(reg_all,type="l",col="blue",lwd=2,lty=2)
+
+legend(50, 0.8, legend = c("Each parasite","All cases"),
+       lty= c(1,2), col = c("grey","red" ),
+       lwd= c(1,2), cex = 1, bty="n")
+axis(1, seq(0, 80, 10), 0:8,
+     col.axis="black", las=1, cex.axis=1)
+axis(2, seq(0, 1, 0.1), seq(0, 1, 0.1),
+     col.axis="black", las=1, cex.axis=1)
